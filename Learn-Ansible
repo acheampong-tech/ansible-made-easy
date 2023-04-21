@@ -1,0 +1,919 @@
+https://www.youtube.com/watch?v=Km3BCQnV6sw&t=652s
+
+
+Installing Ansible on Ubuntu 22.04
+
+sudo apt update
+
+sudo apt install software-properties-common
+
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+
+sudo apt -y install ansible
+
+sudo apt y update
+
+ansible --version
+
+ssh-keygen
+
+On Host
+sudo apt-get -y update 
+sudo apt-get -y install python
+
+Keyless SSH
+On Master: ssh-keygen
+
+On Slave: sudo nano .ssh/authorized_key
+
+
+
+
+Generate SSH Keys
+ssh-keygen
+
+
+Setup nodes in hosts file 
+
+[xxx]
+
+xx ansible_ssh_host=eg. ubuntu@1.2.3.4
+
+
+
+Ad-hoc Commands 
+
+Check all ansible models
+ansible-doc --list
+
+Ping All added Remote servers
+ansible -m ping <group-name>
+ansible -m ping <ip-address>
+ansible -m ping all
+ansible -m ping web*
+ansible -m ansible.builtin.ping all
+
+
+
+Running the update&&upgrade
+ansible -b --become-method=sudo -m shell -a 'apt update' <group-name>
+
+
+Installing Apache
+ansible -b --become-method=sudo -m shell -a 'apt install -y apache2' <group-name>
+
+ansible -b -m package -a "name=<package> state=present" <group-name>
+
+ansible -b -m service -a "name=nginx state=restarted" <group-name>
+
+Working with platform-specific package managers 
+
+ansible -b -m apt -a "upgrade=dist update_cache=yes" <group-name>
+
+ansible -b -m yum -a "name=* state=latest update_cache=yes" <group-name>
+
+ansible -m ansible.builtin.ping all
+
+
+Multi distribution machines – custom playbooks
+
+---
+- name: hostnames demo
+  hosts: all
+  gather_facts: true
+  tasks:
+
+    - name: print inventory_hostname
+      ansible.builtin.debug:
+        var: inventory_hostname
+    - name: print ansible_hostname
+      ansible.builtin.debug:
+        var: ansible_hostname
+    - name: print ansible_fqdn
+      ansible.builtin.debug:
+        var: ansible_fqdn
+    - name: print ansible_fqdn
+      ansible.builtin.debug:
+        var: ansible_distribution
+
+
+
+---
+#- name: Provisioning EC2 instance using Ansible
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: provisioning
+
+  tasks:
+    - name: create EC2 Instances
+      amazon.aws.ec2_instance:
+         key_name: Temp_key
+         instance_type: t2.micro
+         image_id: ami-06e46074ae430fba6
+         wait: yes
+         count: 1
+         region: us-east-1
+         aws_access_key: xxxx
+         aws_secret_key: xxxxx
+
+
+---
+- hosts: localhost
+  connection: local
+
+- name: start multiple instances
+   amazon.aws.ec2_instance:
+    key_name: Temp_key.pem
+    instance_type: t2.micro
+    image_id: ami-06e46074ae430fba6
+    wait: yes
+    exact_count: 1
+    region: us-east-1
+    vpc_subnet_id: subnet-01492482cf83b183a
+    network:
+      assign_public_ip: true
+      security_group: default
+    tags:
+      foo: ansible_project
+    aws_access_key: xxxxx
+    aws_secret_key: xxxxx
+
+
+
+
+##https://www.coachdevops.com/2021/07/ansible-playbook-for-provisioning-new.html
+
+
+##ANSIBLE_PLAYBOOK TO PROVISION EC2 INSTANCES AND OTHER RESOURCES 
+
+##Installing Ansible on Ubuntu 22.04
+
+sudo apt update -y
+
+sudo apt install -y software-properties-common
+
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+
+sudo apt install -y ansible
+
+sudo apt update -y
+
+sudo apt install python3-pip -y
+
+sudo pip install -y boto boto3
+
+##Check if Boto is installed
+pip list boto | grep boto
+
+##check if ansible is installed
+ansible --version
+
+
+##Setting-up host configuration
+
+sudo nano /etc/ansible/hosts
+
+ubuntu@ip-123-45-67-891:/etc/ansible$ sudo nano hosts
+[localhost]
+local
+
+
+mkdir playbook
+cd playbook/
+sudo touch {create,start,stop,terminate}_ec2.yml
+
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: true
+  tags: Provisioning
+
+  tasks:
+    - name: create EC2 Instances
+      amazon.aws.ec2_instance:
+         key_name: Temp_key
+         instance_type: t2.micro
+         image_id: ami-06e46074ae430fba6
+         wait: yes
+         count: 1
+         region: us-east-1
+
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: true
+  tags: Provisioning
+
+  tasks:
+    - name: Stop EC2 Instances
+      amazon.aws.ec2_instance:
+         state: stopped
+         region: us-east-1
+         instance_ids:
+          i-035d90eede61fc793
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: true
+  tags: Provisioning
+
+  tasks:
+    - name: Stop EC2 Instances
+      amazon.aws.ec2_instance:
+         state: terminate
+         region: us-east-1
+         instance_ids:
+          - 'i-035d90eede61fc793'
+          - 'i-035d90eede61fc793'
+
+
+
+---
+ - name:  provisioning EC2 instances using Ansible
+   hosts: localhost
+   connection: local
+   gather_facts: True
+   tags: provisioning
+
+   vars:
+     key_name: Temp_key        #Create Your Own KeyPair
+     instance_type: t2.micro
+     image_id: ami-007855ac798b5175e   #Write your own AMI id
+     wait: yes
+     group: ANS_INFRAS.
+     count: 1
+     region: us-east-1     #Write your suitable region
+     security_group: MY_ANSIBLE_SEC.
+
+   tasks:
+
+     - name: Task ###### 1 - Create my security group  #######
+       local_action:
+         module: amazon.aws.ec2_group
+         name: "{{ security_group }}"
+         description: SECURITY_FOR_ANS_INFRANS.
+         region: "{{ region }}"
+         rules:
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 443
+              to_port: 443
+              cidr_ip: 0.0.0.0/0
+         rules_egress:
+            - proto: all
+              cidr_ip: 0.0.0.0/0
+       register: basic_firewall
+
+     - name: Task Instance
+       amazon.aws.ec2_instance:
+         security_groups: "{{ security_group }}"
+         instance_type: "{{ instance_type}}"
+         image_id: "{{ image_id }}"
+         wait: true
+         region: "{{ region }}"
+         key_name: "{{ key_name }}"
+         count: "{{count}}"
+       register: ec2
+
+     - name: Task #3 Add tagging to EC2 Instance
+       amazon.aws.ec2_tag:
+         region: '{{ region }}'
+         resource: '{{ item.id }}'
+         state: present
+       with_items: "{{ ec2.instances }}"
+       args:
+         tags:
+           Name: 'MyTargetEc2Instance'
+
+
+
+
+---
+ - name:  provisioning EC2 instances using Ansible
+   hosts: localhost
+   connection: local
+   gather_facts: True
+   tags: provisioning
+
+   vars:
+     key_name: Temp_key        
+     instance_type: t2.micro
+     image_id: ami-007855ac798b5175e  
+     wait: yes
+     group: ANS_INFRAS.
+     count: 1
+     region: us-east-1     
+     security_group: MY_ANSIBLE_SEC.
+
+   tasks:
+
+     - name: CREATING SECURITY GROUPS USING ANSIBLE
+       local_action:
+         module: amazon.aws.ec2_group
+         name: "{{ security_group }}"
+         description: SECURITY_FOR_ANS_INFRANS.
+         region: "{{ region }}"
+         rules:
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 443
+              to_port: 443
+              cidr_ip: 0.0.0.0/0
+         rules_egress:
+            - proto: all
+              cidr_ip: 0.0.0.0/0
+       register: basic_firewall
+
+     - name: CREATING INSTANCE USING ANSIBLE
+       amazon.aws.ec2_instance:
+         security_groups: "{{ security_group }}"
+         instance_type: "{{ instance_type}}"
+		 name: anyname
+         image_id: "{{ image_id }}"
+         wait: true
+         region: "{{ region }}"
+         key_name: "{{ key_name }}"
+         count: "{{count}}"
+       register: ec2
+
+
+
+###################################################################################################################################
+
+Ansible: Setup, Configure, and Ad Hoc Commands Deep Dive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Ansible is an opensource tool that enables automate, configure and orchestrate your infrastructure.
+
+How to install Ansible
+----------------------
+>>  yum list epel-release
+>>  yum install epel-release(do it only if not installed)
+>>  sudo yum install ansible
+>>  sudo yum install git
+
+Configure Ansible Inventory(An inventory is a list of hosts that Ansible manages)
+---------------------------
+>>  vim /etc/ansible/hosts  (Default Ansible Inventory File)
+localhost
+vsathyak2 ansible_host=vsathyak2c.mylabserver.com
+vsathyak3 ansible_host=vsathyak3c.mylabserver.com
+
+Create a user 'ansible' in Control node
+-------------------------------------
+>>  sudo useradd ansible(adding user ansible)
+>>  sudo passwd ansible(learn@123)
+
+>>  su - ansible
+>>  ansible localhost -m ping -k 
+SSH password: manu@123
+
+localhost | FAILED! => {
+    "msg": "Using a SSH password instead of a key is not possible because Host Key checking is enabled and sshpass 
+    does not support this.  Please add this host's fingerprint to your known_hosts file to manage this host."
+}
+
+>>  ssh localhost  (do this as ansible user)
+>>  ansible localhost -m ping -k 
+SSH password: learn@123
+
+localhost | SUCCESS => {
+    "ansible_facts": {"discovered_interpreter_python": "/usr/bin/python"}, 
+    "changed": false, 
+    "ping": "pong"
+}
+
+________________________________________________________________________________________________________________________
+Configuring SSH and Sudo for Ansible
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Create a user 'ansible' and set password in Host node
+-----------------------------------------------------
+>>  Connect over ssh to host node from control node
+>>  sudo useradd ansible (adding user ansible)
+>>  sudo passwd ansible (manu@123)
+>>  logout
+
+Sharing preshared key from Control node to Host node
+---------------------------------------------------
+>>  sudo su - ansible (switching to ansible user)
+>>  ssh-keygen (generate ssh keys on Control Node)
+>>  ssh-copy-id vsathyak2c.mylabserver.com
+>>  Enter ansible user password
+
+Giving sudo privilege to 'ansible' user in Host nodes
+-----------------------------------------------------
+>>  ssh cloud_user@vsathyak2c.mylabserver.com  from control node or access it from terminal directly.
+
+Note :: /etc/sudoers may be edited to allow 'ansible' user to sudo any commandwithout a password
+>>  sudo visudo
+
+Find the line
+# %wheel        ALL=(ALL)       NOPASSWD: ALL
+
+Add the following
+ansible        ALL=(ALL)       NOPASSWD: ALL
+
+________________________________________________________________________________________________________________________
+The Ansible Configuration File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. The default ansible configuration is /etc/ansible/ansible.cfg
+2. The configuration properties may be overridden using local files.
+    A. First file found is used and later one is ignored.
+    B. Configuration file is searched in the following order
+        a. ANSIBLE_CONFIG (environment variable if set)
+        b. ansible.cfg (in current directory)
+        c. ~/ansible.cfg (in home directory)
+        d. /etc/ansible/ansible.cfg
+        
+Way to view the ansible config file
+-----------------------------------
+>>  vim /etc/ansible/ansible.cfg
+            OR
+>>  man ansible-config
+        
+________________________________________________________________________________________________________________________
+Setting Up the Ansible Inventory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Inventory is a list of hosts that Ansible manages.
+2. The default ansible inventory file is /etc/ansible/hosts
+3. Inventory location may be specified as follows.
+    a. Default /etc/ansible/hosts
+    b. Specified by CLI : ansible -i <inventory_file_name>
+    c. Can be set in ansible.cfg
+
+You can use default host inventory or you can create a new inventory file.
+Create user defined inventory file
+----------------------------------
+>>  sudo su - ansible
+>>  pwd  ==> /home/ansible
+>>  cp /etc/ansible/hosts inv  (Copying default inventory to user definced inventory inv)
+>>  vim inv
+
+localhost
+
+[all]                --> this defines a group of hosts in ansible called 'all'
+localhost
+vsathyak2 ansible_host=vsathyak2c.mylabserver.com
+vsathyak3 ansible_host=vsathyak3c.mylabserver.com
+
+[centos]             --> this defines a group of hosts in ansible called 'centos'
+vsathyak2 ansible_host=vsathyak2c.mylabserver.com
+vsathyak3 ansible_host=vsathyak3c.mylabserver.com
+
+[ubuntu]             --> this defines a group of hosts in ansible called 'ubuntu'
+vsathyak4 ansible_host=vsathyak4c.mylabserver.com
+:wq
+
+>>  ansible localhost -m ping           (ping on the localhost)
+>>  ansible -i inv centos -m ping       (ping to all the host under the group centos) 
+
+vsathyak2 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": false, 
+    "ping": "pong"
+}
+vsathyak3 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": false, 
+    "ping": "pong"
+}
+
+________________________________________________________________________________________________________________________
+Ansible Ad Hoc Commands - Understanding Ansible Ad Hoc
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The Ansible Command
+-------------------
+Syntax:  ansible <HOST> -m <MODULE> -a "ARG1 ARG2 ARG3" -f <NUM_FORKS>
+
+Ping Module   ==> ansible -i inv remote -m ping    [remote is the host group mentioned in user defined inventory:inv]
+
+Setup Module  ==> ansible -i inv remote -m setup   [Give facts about remote host.]
+
+Yum Module    ==> ansible -i inv remote -b -m yum -a "name=elinks state=installed" -f 10  (Installed)
+              ==> ansible -i inv remote -b -m yum -a "name=elinks state=absent"           (Uninstalled)
+              ==> -i to pass inventory file
+              ==> -m to pass module
+              ==> -b to pass root privilege
+              ==> -a to pass arguments
+              ==> -f represents forks, default value is 5
+              ==> forks sets number of hosts on which the current task is executed simultaneously
+              
+________________________________________________________________________________________________________________________
+Understanding Ansible Modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Modules are discrete units of code that can be used from the command line or in a playbook task
+- Modules can take arguments
+- Most modules take argument as key=value and delimited by white space.
+- man ansible-doc
+- Eg: ansible-doc <MODULE>
+
+________________________________________________________________________________________________________________________
+The Shell and Command Modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The shell and command modules are both effective ways to run raw commands on target host.
+- Command Module is the default module used with Ansible ad-hoc when no module is specified.
+- Shell module works almost exactly like comman module except commands are ran in a shell environment
+- Primary reason to use shell module over command module is for the use of input / output redirection, 
+  environment variables or other such shell features.
+- As per Ansible doc, best practice is to use command module unless you require shell feature.
+
+Command Module
+--------------
+>>  ansible vsathyak2 -a "yum install -y elinks"              (No need to specify command module.)
+>>  ansible vsathyak2 -m command -a "yum install -y elinks"   (Specified command module here.)
+>>  ansible vsathyak2 -m yum -a "name=elinks state=installed" (Using yum module.)
+>>  ansible vsathyak2 -a "touch /tmp/file"                    (Creates a file.)
+>>  ansible vsathyak2 -a "touch /tmp/file creates=/tmp/file"  ('creates' param will check the file exist. 
+                                                               if so, it won't add the file again.)
+                                                               
+Shell Module
+------------
+>>  ansible vsathyak2 -m shell -a "echo $PATH > /tmp/file"  (Store Value of PATH variable to /tmp/file)
+                                                            (echo '$PATH > /tmp/file' on command module, it wont work)
+                                               
+________________________________________________________________________________________________________________________
+Collecting System Information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Ansible facts are simple various properties and infirmation regarding a given remote system                                                            
+- Setup module can retrieve facts
+- Facts may be filtered by passing a value for the filter paramater
+
+>>  ansible -i inv vsathyak2 -m setup
+>>  ansible -i inv vsathyak2 -m setup | less
+>>  ansible -i inv vsathyak2 -m setup -a 'filter=ansible_all_ipv4_addresses' 
+>>  ansible -i inv vsathyak2 -m setup -a 'filter=*ipv4*'   (filter support wildcards.)
+
+- Ansible command output may be directed to a file using the --tree output file flag
+
+>>  ansible -i inv <HOST> -m setup --tree <DIRECTORY>
+Eg: ansible -i inv centos -m setup --tree facts_dir
+
+>>  cd facts_dir
+>>  ls -la   :  2 files, one for each of the host that comes under the server list : centos
+
+________________________________________________________________________________________________________________________
+File Manipulation with Ansible
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Working with File Module
+------------------------
+- File Module can be used to create, delete and modify file properties.
+- ansible-doc file (do in terminal to get more infor about file module)
+- ansible-doc -s file  
+
+>>  ansible -i inv vsathyak2 -m file -a "name=testfile state=touch" 
+    - add file under home dir of ansible user in vsathyak2
+    
+>>  ansible -i inv vsathyak2 -b -m file -a "name=/root/testfile state=touch"  
+    - add file under /root dir in vsathyak2
+    - Passed -b flag to provide the root privilege.
+
+>>  ansible -i inv vsathyak2 -b -m file -a "name=testfile state=absent"  
+    - absent state will remove the file after its done.
+    
+Working with Copy Module 
+------------------------                                                          
+- Copy Module can be used to copy file from number of sources.
+  - Control Node to Target Node
+  - The file system on the target node.
+  - Created during the execution of the copy module and placed on the target nodes.
+- ansible-doc copy
+- ansible-doc -s copy
+
+>>  ansible -i inv vsathyak2 -m copy -a "src=testfile dest=newfile" 
+    - src represents the file or dir name in control node
+    - dest represents the file or dir name in host node
+    - file from control node get copied to the host vsathyak2 using the above command.
+    
+>>  ansible -i inv vsathyak2 -m copy -a "src=srcdir dest=destdir" 
+    - srcdir is copied to control node under the dir destdir.
+
+>>  ansible -i inv vsathyak2 -m copy -a "src=srcdir dest=." 
+    - srcdir is copied to control node with same directory name.
+
+________________________________________________________________________________________________________________________
+Editing File Contents with the `lineinfile` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The lineinfile module is a key way of interacting with a files content
+- Key feature includes inserting a line of text into a given file
+- The module will place the line of text at the end of a file by default. 
+- But it can place the line after or before a line of matched text.
+- If the module detects the provided text already in place, it will not add it again.
+- It will also remove lines a line of text.
+
+>>  ansible -i inv vsathyak2 -m lineinfile -a "path=/home/ansible/testfile line='Hello, VSK' state=present"
+    - This will insert the content ''Hello, VSK' to the testfile in the host machine: vsathyak2.
+    
+>>  ansible -i inv vsathyak2 -m lineinfile -a "path=/home/ansible/testfile line='Hello, Manu' insertbefore=VSK"
+    - This will insert the line 'Hello, Manu' before the regex match VSK
+    
+>>  ansible -i inv vsathyak2 -m lineinfile -a "path=/home/ansible/testfile line='Hello, Vitaly' insertafter=VSK"
+    - This will insert the line 'Hello, Vitaly' after the regex match VSK
+
+________________________________________________________________________________________________________________________
+Downloading Files with the `get_url` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+It is frequently necessary to download files from http hosts on managed hosts.
+The get_url module provides functionality for downloaded files over http with a variety of options
+- http, https and ftp protocols are supported.
+- able to perform checksum verification
+- support proxy network access
+- may use basic or x509 authentication
+
+>>  ansible -i inv vsathyak2 -m get_url -a "url=http://google.com dest=/home/ansible/google.html"
+    - dest parameter requires absolute bath.
+
+________________________________________________________________________________________________________________________
+Working with File Archives
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Archive
+--------
+The archive and unarchive modules is used for various type of file archives.
+- These modules work with common archives such as tar, gz(default), bz2 and zip
+- The modules allow for compression of files and directories.
+
+>>  ansible -i inv vsathyak2 -m archive -a "path=/home/ansible format=zip dest=/tmp/files.zip"
+    - This will grab all files under /home/ansible, and create a zip files on the dest /tmp/files.zip
+
+Unarchive
+---------
+>>  ansible -i inv vsathyak2 -m unarchive -a "remote_src=yes  src=/tmp/files.zip dest=/tmp"
+    - remote_src=yes indicate the archived file is already on the remote system and not local to the Ansible controller.
+    - no need to specify the unzip file format option. It will take care by itself.
+
+________________________________________________________________________________________________________________________
+Configuring System Users and Groups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Creating System Users with the User Module
+------------------------------------------
+User module may interact with users in many ways.
+- Create users
+- Remove users
+- Change user properties
+
+Add User
+--------
+>>  ansible -i inv vsathyak2 -b -m user -a "name=super"
+>>  ansible -i inv vsathyak2 -b -m user -a "name=super state=present"
+    - user named 'super' is created
+    - 'b' flag is used since user creation needs root privileges
+    - default 'state' is 'present'.
+
+Remove User
+-----------
+>>  ansible -i inv vsathyak2 -b -m user -a "name=super state=absent"
+    - This will remove the user but won't remove the home folder of the user
+    
+>>  ansible -i inv vsathyak2 -b -m user -a "name=super state=absent remove=yes"
+    - This will remove the user all info related to the user
+    
+________________________________________________________________________________________________________________________    
+Working with the Group Module
+-----------------------------
+Group module works with groups in the same way as the user module interacts with users.
+
+Add Group
+--------
+>>  ansible -i inv vsathyak2 -b -m group -a "name=consultants"
+>>  ansible -i inv vsathyak2 -b -m group -a "name=consultants state=present"
+    - group named 'consultants' is created
+    - 'b' flag is used since group creation needs root privileges
+    - default 'state' is 'present'.
+    
+Add User and Group
+------------------
+>>  ansible -i inv vsathyak2 -b -m group -a "name=consultants"     
+    - will create the group 'consultants'
+    
+>>  ansible -i -inv vsathyak2 -b -m user -a "name=super group=consultants"
+    - will add the user 'super' to already created group 'consultants'
+    
+>>  ssh vsathyak2
+>>  id super
+
+Remove Group
+------------
+>>  ansible -i inv vsathyak2 -b -m group -a "name=consultants state=absent"
+    - will throw error if any user exist in the group : consultants
+    
+>>  ansible -i inv vsathyak2 -b -m user -a "name=super group=wheel"
+>>  ansible -i inv vsathyak2 -b -m group -a "name=consultants state=absent"
+    - Moving user 'super' from group 'consultants' to group 'wheel'
+    - Deleting group consultants then.
+    
+________________________________________________________________________________________________________________________
+Installing Software and Daemon Managment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing Software
+-------------------
+package, yum and apt are used install and manage software packages
+- yum and apt are used for distribution specific software management.
+- package module will detect teh target host distribution and use the appropriate method of installing software.
+- In a mixed distribution environment, package module is the best practice.
+
+package
+-------
+>>  ansible all -b -m package -a "name=ntpdate state=latest"
+
+>>  ansible all -b -m package -a "name=httpd state=latest"
+    - This will throw error if you have an ubuntu based host node since the package name for ubuntu is apache2 and
+      apache2 doesnot work for centos based systems.
+    - So package module can be used only when all the distros use same name for the software package to be installed.
+    
+yum
+---
+>>  ansible -i inv centos -b -m yum -a "name=httpd state=latest"
+
+apt
+---
+>>  ansible -i inv ubuntu -b -m apt -a "name=apache2 state=latest"    
+    
+
+Controlling Daemons with the Service Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The service module isused to control system daemons
+- It is compatible with both systemd and the older BCD init style of daemon management
+
+To start a service
+------------------
+>>  ansible -i inv vsathyak2 -b -m service -a "name=httpd state=started enabled=yes"
+>>  Go to the server and do systemctl status httpd
+
+To find status a service
+------------------------
+>>  ansible -i inv vsathyak2 -b -m service -a "name=httpd"
+
+________________________________________________________________________________________________________________________
+Managing Long-running Commands
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Async Actions
+-------------
+. Some operations may require a significant amount of time to execute
+. Ansible provide a feature that allows an operation to run asynchronously so that the status may be checked
+. There are two options related to running asynchronous commands
+  -B used to provide a timeout value and initiate the operation
+  -P used to engage on polling of the operation on a set interval
+. The status may be checked using the module async_status
+
+>>  vim sleep.sh
+
+#!/bin/sh
+
+sleep 10
+echo "I'm done~"
+exit
+
+>>  ansible localhost -a "/home/ansible/sleep.sh" -B 15
+    This will work since the .sh script executed in 10 sec, ie before the timeout time.
+    
+>>  ansible localhost -a "/home/ansible/sleep.sh" -B 5
+    This will not work since the .sh script executed in 10 sec, but the timeout time is 5 sec.
+    
+>>  ansible localhost -a "/home/ansible/sleep.sh" -B 20 -P 3
+    Here on every 3 second, it will check the status of execution through polling 
+    
+>>  ansible localhost -a "/home/ansible/sleep.sh" -B 20 -P 0
+    Setting 0 to polling will disable polling. 
+    
+________________________________________________________________________________________________________________________    
+Parallelism
+~~~~~~~~~~~
+Ansible uses the concept called fork to execute tasks in parallel.
+Each fork is able to run a task against a target host and by default, ansible executes 5 forks.
+Assuming one run a module against 5 hosts, the module should execute near simultaneously on all hosts.
+If more than 5 hosts are targeted, hosts after first 5 must wait for a fork to become free before being able to execute.
+The number of forks used by ansible is configured oin ansible.cfg or on as-needed basis using -f or --forks flag.
+
+Syntax:  ansible <HOST> -m <MODULE> -a "ARG1 ARG2 ARG3" -f <NUM_FORKS>
+
+>>  ansible all -b -m yum -a "name=elinks state=installed" 
+    Say we have 10 hosts machines. Then ansible will install elinks on first 5 first. Then the remaining.
+
+>>  ansible all -b -m yum -a "name=elinks state=installed" -f 10
+    Say we have 10 hosts machines. Here ansible will install elinks on all 10 hosts
+    
+________________________________________________________________________________________________________________________    
+
+
+####################################################################################################################################
+
+Where 
+-m = Module name
+-a = allow parameters
+-u = username
+
+
+ansible 127.0.0.1 -m file -a "dest=/opt/a.txt mode=600 state=touch"
+ansible 127.0.0.1 -m file -a "dest=/opt/a.txt mode=600 state=touch"
+ansible 127.0.0.1 -m file -a "dest=/opt/a.txt mode=600 state=touch owner=ec2-user"
+ansible 127.0.0.1 -m file -a "dest=/opt/b.txt mode=755 state=touch owner=ec2-user"
+ansible 127.0.0.1 -m file -a "dest=/opt/c.txt mode=755 state=touch owner=ec2-user"
+ansible 127.0.0.1 -m file -a "dest=/opt/bmc.txt mode=755 owner=ec2-user"
+
+ansible localhost -m file -a "dest=/opt/bmcdir mode=755 owner=ec2-user group=ec2-user state=directory"
+
+ansible 127.0.0.1 -m yum -a "name=httpd state=present"
+ansible 127.0.0.1 -m yum -a "name=httpd state=absent"
+
+ansible 127.0.0.1 -m service -a "name=httpd state=started"
+ansible 127.0.0.1 -m service -a "name=httpd state=stopped"
+
+ansible 127.0.0.1 -m command -a "/bin/yum update -y"
+ansible 127.0.0.1 -a "/bin/yum update -y"
+
+ansible 127.0.0.1 -m copy -a "src=/opt/index.html dest=/var/www/html/index.html"
+
+ansible 127.0.0.1 -m setup
+
+# Commands used in Hands-On-Ansible Mod5 Exercise 1
+
+# Install Apache
+$ ansible webservers -i inventory -m yum -a "name=httpd state=present" --sudo
+
+# Start Apache
+$ ansible webservers -i inventory -m service -a "name=httpd enabled=yes state=started" --sudo
+
+# Install MySQL
+$ ansible dbservers -i inventory -m yum -a "name=mysql-server state=present" --sudo
+
+# Start MySQL
+$ ansible dbservers -i inventory -m service -a "name=mysqld enabled=yes state=started" --sudo
+
+# Stop IPTables on all systems
+$ ansible webservers:dbservers -i inventory -m service -a "name=iptables enabled=no state=stopped" --sudo
+
+$ ansible servers -a "/sbin/reboot" 
+
+$ ansible all -m user -a "name=foo password="
+
+$ ansible webservers -m git -a "repo=https://foo.example.org/repo.git dest=/srv/myapp version=HEAD"
+
+$ ansible all -m user -a "name=foo state=absent"
+
+
+# Display only facts about certain interfaces.
+# ansible all -m ansible.builtin.setup -a 'filter=ansible_eth[0-2]'
+
+# Restrict additional gathered facts to network and virtual (includes default minimum facts)
+# ansible all -m ansible.builtin.setup -a 'gather_subset=network,virtual'
+
+# Collect only network and virtual (excludes default minimum facts)
+# ansible all -m ansible.builtin.setup -a 'gather_subset=!all,network,virtual'
+
+# Do not call puppet facter or ohai even if present.
+# ansible all -m ansible.builtin.setup -a 'gather_subset=!facter,!ohai'
+
+# Only collect the default minimum amount of facts:
+# ansible all -m ansible.builtin.setup -a 'gather_subset=!all'
+
+# Collect no facts, even the default minimum subset of facts:
+# ansible all -m ansible.builtin.setup -a 'gather_subset=!all,!min'
+
+# Display facts from Windows hosts with custom facts stored in C:\custom_facts.
+# ansible windows -m ansible.builtin.setup -a "fact_path='c:\custom_facts'"
+
+# Gathers facts for the machines in the dbservers group (a.k.a Delegating facts)
+
+# Display facts from all hosts and store them indexed by I(hostname) at C(/tmp/facts).
+# ansible all -m ansible.builtin.setup --tree /tmp/facts
+
+# Display only facts regarding memory found by ansible on all hosts and output them.
+# ansible all -m ansible.builtin.setup -a 'filter=ansible_*_mb'
+
+# Display only facts returned by facter.
+# ansible all -m ansible.builtin.setup -a 'filter=facter_*'
+
+# Collect only facts returned by facter.
+# ansible all -m ansible.builtin.setup -a 'gather_subset=!all,facter'
+
+
+- name: Filter and return only selected facts
+  ansible.builtin.setup:
+    filter:
+      - 'ansible_distribution'
+      - 'ansible_machine_id'
+      - 'ansible_*_mb'
+
+
+
+
