@@ -40,6 +40,32 @@ Setup nodes in hosts file
 xx ansible_ssh_host=eg. ubuntu@1.2.3.4
 
 
+###############################################################################################
+                        ############### SETTING UP ANSIBLE ##############
+Copy {key.pem} on master
+chmod 400 {key.pem}
+create {vim inventory.txt}
+
+Set variables in {inventory.txt} 
+[webserver]
+ansible-target-1 ansible_host=18.221.44.xxx ansible_connection=ssh ansible_user=ec2-user
+
+[database]
+ansible-target-1 ansible_host=3.142.68.xxx ansible_connection=ssh ansible_user=ec2-user
+
+[cache]
+ansible-target-1 ansible_host=18.221.220.xxx ansible_connection=ssh ansible_user=ec2-user
+
+Try your manual connections
+ansible ansible-target-1 -m ping -i inventory.txt   ## type {yes}
+ssh-agent bash
+cp {key.pem} ~/.ssh/
+ssh-add ~/.ssh/{key.pem}
+export ANSIBLE_HOST_KEY_CHECKING=False {alternatively go and uncheck the host_key_checking in the ansible.cfg file}
+ run the command {ansible all -m ping -i inventory.txt}
+ 
+ #####################################################################################################
+
 
 Ad-hoc Commands 
 
