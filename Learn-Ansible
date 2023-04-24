@@ -81,6 +81,12 @@ export ANSIBLE_HOST_KEY_CHECKING=False {alternatively go and uncheck the host_ke
  run ansible-playbook without any problems you will have to add the code below in the file /etc/ansible/ansible.cfg.
 
 host_key_checking = False
+
+
+
+https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html
+
+https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_intro.html#playbook-syntax
  
  
  #####################################################################################################
