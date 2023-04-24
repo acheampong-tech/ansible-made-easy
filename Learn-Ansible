@@ -64,6 +64,25 @@ ssh-add ~/.ssh/{key.pem}
 export ANSIBLE_HOST_KEY_CHECKING=False {alternatively go and uncheck the host_key_checking in the ansible.cfg file}
  run the command {ansible all -m ping -i inventory.txt}
  
+ 
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ How to Disable host-key checking in ansible
+ 
+ first, run the command below.
+ # export ANSIBLE_HOST_KEY_CHECKING=False
+ 
+ Now, once you have disabled host key checking run your ansible ad-hoc command.
+ # ansible all -i inventory -m shell -a 'uptime'
+ 
+ Run Ansible Adhoc command with Sudo
+ # ansible all -i inventory.yml -m shell -a 'uptime' -K --become
+ 
+ The above method was to disable host key checking for ansible ad-hoc command, however, you want to disable it globally so that you can 
+ run ansible-playbook without any problems you will have to add the code below in the file /etc/ansible/ansible.cfg.
+
+host_key_checking = False
+ 
+ 
  #####################################################################################################
 
 
