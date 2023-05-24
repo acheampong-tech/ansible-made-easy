@@ -42,7 +42,7 @@ Setup nodes in hosts file
 xx ansible_ssh_host=eg. ubuntu@1.2.3.4
 
 
-###############################################################################################
+###################################################################################################################################################################
                         ############### SETTING UP ANSIBLE ##############
 Copy {key.pem} on master
 chmod 400 {key.pem}
@@ -67,7 +67,7 @@ export ANSIBLE_HOST_KEY_CHECKING=False {alternatively go and uncheck the host_ke
  run the command {ansible all -m ping -i inventory.txt}
  
  
- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx####################################################################
  How to Disable host-key checking in ansible
  
  first, run the command below.
@@ -91,7 +91,7 @@ https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html
 https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_intro.html#playbook-syntax
  
  
- #####################################################################################################
+ ############################################################################################################################################################################
 
 
 Ad-hoc Commands 
